@@ -4,7 +4,6 @@
   <requires lib="gtk+" version="3.4"/>
   <requires lib="greeter_menu_bar" version="1.0"/>
   <object class="GtkAccelGroup" id="a11y_accelgroup"/>
-  <object class="GtkAccelGroup" id="power_accelgroup"/>
   <object class="GtkEventBox" id="panel_window">
     <property name="name">panel_window</property>
     <property name="visible">True</property>
@@ -180,6 +179,7 @@
       <class name="background"/>
     </style>
   </object>
+  <object class="GtkAccelGroup" id="power_accelgroup"/>
   <object class="GtkEventBox" id="power_window">
     <property name="name">power_window</property>
     <property name="can_focus">False</property>
@@ -335,6 +335,9 @@
           <placeholder/>
         </child>
       </object>
+      <packing>
+        <property name="index">-1</property>
+      </packing>
     </child>
     <style>
       <class name="lightdm-gtk-greeter"/>
@@ -379,55 +382,6 @@
                 <property name="row_spacing">6</property>
                 <property name="column_spacing">18</property>
                 <child>
-                  <object class="GtkFrame" id="user_image_border">
-                    <property name="name">user_image_border</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="halign">center</property>
-                    <property name="valign">center</property>
-                    <property name="label_xalign">0</property>
-                    <property name="shadow_type">none</property>
-                    <child>
-                      <object class="GtkImage" id="user_image">
-                        <property name="name">user_image</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="pixel_size">80</property>
-                        <property name="icon_name">avatar-default</property>
-                      </object>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">0</property>
-                    <property name="height">3</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkComboBox" id="user_combobox">
-                    <property name="name">user_combobox</property>
-                    <property name="width_request">200</property>
-                    <property name="can_focus">False</property>
-                    <property name="valign">center</property>
-                    <property name="margin_top">12</property>
-                    <property name="hexpand">True</property>
-                    <property name="model">user_liststore</property>
-                    <signal name="changed" handler="user_combobox_active_changed_cb" swapped="no"/>
-                    <signal name="key-press-event" handler="user_combo_key_press_cb" swapped="no"/>
-                    <child>
-                      <object class="GtkCellRendererText" id="cellrenderertext1"/>
-                      <attributes>
-                        <attribute name="text">1</attribute>
-                        <attribute name="weight">2</attribute>
-                      </attributes>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">0</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkEntry" id="username_entry">
                     <property name="name">prompt_entry</property>
                     <property name="can_focus">True</property>
@@ -439,7 +393,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
-                    <property name="top_attach">1</property>
+                    <property name="top_attach">0</property>
                   </packing>
                 </child>
                 <child>
@@ -460,8 +414,25 @@
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
-                    <property name="top_attach">2</property>
+                    <property name="top_attach">1</property>
                   </packing>
+                </child>
+                <child>
+                  <object class="GtkIconView" id="user_view">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="margin">6</property>
+                    <property name="vscroll_policy">natural</property>
+                    <property name="model">user_liststore</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                    <property name="height">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
                 </child>
               </object>
             </child>

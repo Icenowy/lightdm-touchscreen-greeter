@@ -1,4 +1,4 @@
-/* automatically generated from lightdm-gtk-greeter-fallback.css */
+/* automatically generated from ../../src/lightdm-gtk-greeter-fallback.css */
 #ifdef __SUNPRO_C
 #pragma align 4 (lightdm_gtk_greeter_css_fallback)
 #endif

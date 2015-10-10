@@ -72,8 +72,9 @@ static GtkWidget    *screen_overlay_child;
 
 /* Login window */
 static GtkWidget    *login_window;
-static GtkImage     *user_image;
-static GtkComboBox  *user_combo;
+//static GtkImage     *user_image;
+//static GtkComboBox  *user_combo;
+static GtkIconView  *user_view;
 static GtkEntry     *username_entry, *password_entry;
 static GtkLabel     *message_label;
 static GtkInfoBar   *info_bar;
@@ -720,7 +721,7 @@ set_message_label (LightDMMessageType type, const gchar *text)
 
 static void
 set_user_image (const gchar *username)
-{
+{/*
     const gchar *path;
     LightDMUser *user = NULL;
     GdkPixbuf *image = NULL;
@@ -756,7 +757,7 @@ set_user_image (const gchar *username)
         gtk_image_set_from_pixbuf (GTK_IMAGE (user_image), default_user_pixbuf);
     else
         gtk_image_set_from_icon_name (GTK_IMAGE (user_image), default_user_icon, GTK_ICON_SIZE_DIALOG);
-}
+*/}
 
 /* MenuCommand */
 
@@ -1966,6 +1967,7 @@ cancel_authentication (void)
     GtkTreeModel *model;
     GtkTreeIter iter;
     gboolean other = FALSE;
+    GList *userList;
 
     if (pending_questions)
     {
@@ -1986,22 +1988,28 @@ cancel_authentication (void)
     gtk_entry_set_visibility (password_entry, FALSE);
 
     /* Force refreshing the prompt_box for "Other" */
-    model = gtk_combo_box_get_model (user_combo);
+    model = gtk_icon_view_get_model (user_view);
 
-    if (gtk_combo_box_get_active_iter (user_combo, &iter))
+    userList = gtk_icon_view_get_selected_items (user_view);
+
+    if (!g_list_length (userList))
     {
         gchar *user;
+
+        gtk_tree_model_get_iter(GTK_TREE_MODEL (model), &iter, (GtkTreePath*)(g_list_first(userList)->data));
 
         gtk_tree_model_get (GTK_TREE_MODEL (model), &iter, 0, &user, -1);
         other = (g_strcmp0 (user, "*other") == 0);
         g_free (user);
     }
 
+    g_list_free_full (userList, (GDestroyNotify) gtk_tree_path_free);
+
     /* Start a new login or return to the user list */
     if (other || lightdm_greeter_get_hide_users_hint (greeter))
         start_authentication ("*other");
     else
-        gtk_widget_grab_focus (GTK_WIDGET (user_combo));
+        gtk_widget_grab_focus (GTK_WIDGET (user_view));
 }
 
 static void
@@ -2036,34 +2044,6 @@ G_MODULE_EXPORT
 gboolean
 password_key_press_cb (GtkWidget *widget, GdkEventKey *event, gpointer user_data)
 {
-    if ((event->keyval == GDK_KEY_Up || event->keyval == GDK_KEY_Down) &&
-        gtk_widget_get_visible (GTK_WIDGET (user_combo)))
-    {
-        gboolean available;
-        GtkTreeIter iter;
-        GtkTreeModel *model = gtk_combo_box_get_model (user_combo);
-
-        /* Back to username_entry if it is available */
-        if (event->keyval == GDK_KEY_Up &&
-            gtk_widget_get_visible (GTK_WIDGET (username_entry)) && widget == GTK_WIDGET (password_entry))
-        {
-            gtk_widget_grab_focus (GTK_WIDGET (username_entry));
-            return TRUE;
-        }
-
-        if (!gtk_combo_box_get_active_iter (user_combo, &iter))
-            return FALSE;
-
-        if (event->keyval == GDK_KEY_Up)
-            available = gtk_tree_model_iter_previous (model, &iter);
-        else
-            available = gtk_tree_model_iter_next (model, &iter);
-
-        if (available)
-            gtk_combo_box_set_active_iter (user_combo, &iter);
-
-        return TRUE;
-    }
     return FALSE;
 }
 
@@ -2173,7 +2153,7 @@ set_displayed_user (LightDMGreeter *greeter, const gchar *username)
     {
         user_tooltip = g_strdup (_("Guest Session"));
         gtk_widget_hide (GTK_WIDGET (password_entry));
-        gtk_widget_grab_focus (GTK_WIDGET (user_combo));
+        gtk_widget_grab_focus (GTK_WIDGET (user_view));
     }
 
     set_login_button_label (greeter, username);
@@ -2187,12 +2167,12 @@ set_displayed_user (LightDMGreeter *greeter, const gchar *username)
     }
     else
         set_language (lightdm_language_get_code (lightdm_get_language ()));
-    gtk_widget_set_tooltip_text (GTK_WIDGET (user_combo), user_tooltip);
+    gtk_widget_set_tooltip_text (GTK_WIDGET (user_view), user_tooltip);
     start_authentication (username);
     g_free (user_tooltip);
 }
 
-void user_combobox_active_changed_cb (GtkComboBox *widget, LightDMGreeter *greeter);
+/*void user_combobox_active_changed_cb (GtkComboBox *widget, LightDMGreeter *greeter);
 G_MODULE_EXPORT
 void
 user_combobox_active_changed_cb (GtkComboBox *widget, LightDMGreeter *greeter)
@@ -2213,7 +2193,7 @@ user_combobox_active_changed_cb (GtkComboBox *widget, LightDMGreeter *greeter)
         g_free (user);
     }
     set_message_label (LIGHTDM_MESSAGE_TYPE_INFO, NULL);
-}
+}*/
 
 void login_cb (GtkWidget *widget);
 G_MODULE_EXPORT
@@ -2250,25 +2230,6 @@ void
 cancel_cb (GtkWidget *widget)
 {
     cancel_authentication ();
-}
-
-gboolean
-user_combo_key_press_cb (GtkWidget *widget, GdkEventKey *event, gpointer user_data);
-G_MODULE_EXPORT
-gboolean
-user_combo_key_press_cb (GtkWidget *widget, GdkEventKey *event, gpointer user_data)
-{
-    if (event->keyval == GDK_KEY_Return)
-    {
-        if (gtk_widget_get_visible (GTK_WIDGET (username_entry)))
-            gtk_widget_grab_focus (GTK_WIDGET (username_entry));
-        else if (gtk_widget_get_visible (GTK_WIDGET (password_entry)))
-            gtk_widget_grab_focus (GTK_WIDGET (password_entry));
-        else
-            login_cb (GTK_WIDGET (login_button));
-        return TRUE;
-    }
-    return FALSE;
 }
 
 static void
@@ -2355,7 +2316,7 @@ authentication_complete_cb (LightDMGreeter *greeter)
         else
         {
             gtk_widget_hide (GTK_WIDGET (password_entry));
-            gtk_widget_grab_focus (GTK_WIDGET (user_combo));
+            gtk_widget_grab_focus (GTK_WIDGET (user_view));
         }
     }
     else
@@ -2387,7 +2348,7 @@ user_added_cb (LightDMUserList *user_list, LightDMUser *user, LightDMGreeter *gr
     GtkTreeIter iter;
     gboolean logged_in = FALSE;
 
-    model = gtk_combo_box_get_model (user_combo);
+    model = gtk_icon_view_get_model (user_view);
 
     logged_in = lightdm_user_get_logged_in (user);
 
@@ -2404,7 +2365,7 @@ get_user_iter (const gchar *username, GtkTreeIter *iter)
 {
     GtkTreeModel *model;
 
-    model = gtk_combo_box_get_model (user_combo);
+    model = gtk_icon_view_get_model (user_view);
 
     if (!gtk_tree_model_get_iter_first (model, iter))
         return FALSE;
@@ -2434,7 +2395,7 @@ user_changed_cb (LightDMUserList *user_list, LightDMUser *user, LightDMGreeter *
         return;
     logged_in = lightdm_user_get_logged_in (user);
 
-    model = gtk_combo_box_get_model (user_combo);
+    model = gtk_icon_view_get_model (user_view);
 
     gtk_list_store_set (GTK_LIST_STORE (model), &iter,
                         0, lightdm_user_get_name (user),
@@ -2452,7 +2413,7 @@ user_removed_cb (LightDMUserList *user_list, LightDMUser *user)
     if (!get_user_iter (lightdm_user_get_name (user), &iter))
         return;
 
-    model = gtk_combo_box_get_model (user_combo);
+    model = gtk_icon_view_get_model (user_view);
     gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
 }
 
@@ -2468,7 +2429,7 @@ load_user_list (void)
     g_signal_connect (lightdm_user_list_get_instance (), "user-added", G_CALLBACK (user_added_cb), greeter);
     g_signal_connect (lightdm_user_list_get_instance (), "user-changed", G_CALLBACK (user_changed_cb), greeter);
     g_signal_connect (lightdm_user_list_get_instance (), "user-removed", G_CALLBACK (user_removed_cb), NULL);
-    model = gtk_combo_box_get_model (user_combo);
+    model = gtk_icon_view_get_model (user_view);
     items = lightdm_user_list_get_users (lightdm_user_list_get_instance ());
     for (item = items; item; item = item->next)
     {
@@ -2515,7 +2476,7 @@ load_user_list (void)
         gchar *name;
         gboolean matched = FALSE;
 
-        if (selected_user)
+        /*if (selected_user)
         {
             do
             {
@@ -2537,7 +2498,7 @@ load_user_list (void)
             gtk_combo_box_set_active_iter (user_combo, &iter);
             set_displayed_user (greeter, name);
             g_free (name);
-        }
+        }*/
     }
 
     g_free (last_user);
@@ -2766,8 +2727,9 @@ main (int argc, char **argv)
 
     /* Login window */
     login_window = GTK_WIDGET (gtk_builder_get_object (builder, "login_window"));
-    user_image = GTK_IMAGE (gtk_builder_get_object (builder, "user_image"));
-    user_combo = GTK_COMBO_BOX (gtk_builder_get_object (builder, "user_combobox"));
+    //user_image = GTK_IMAGE (gtk_builder_get_object (builder, "user_image"));
+    //user_combo = GTK_COMBO_BOX (gtk_builder_get_object (builder, "user_combobox"));
+    user_view = GTK_ICON_VIEW (gtk_builder_get_object (builder, "user_view"));
     username_entry = GTK_ENTRY (gtk_builder_get_object (builder, "username_entry"));
     password_entry = GTK_ENTRY (gtk_builder_get_object (builder, "password_entry"));
     info_bar = GTK_INFO_BAR (gtk_builder_get_object (builder, "greeter_infobar"));
@@ -2833,9 +2795,9 @@ main (int argc, char **argv)
 
     if (config_get_bool (NULL, CONFIG_KEY_HIDE_USER_IMAGE, FALSE))
     {
-        gtk_widget_hide (GTK_WIDGET (gtk_builder_get_object (builder, "user_image_border")));
-        gtk_widget_hide (GTK_WIDGET (user_image));  /* Hide to mark image is disabled */
-        gtk_widget_set_size_request (GTK_WIDGET (user_combo), 250, -1);
+        //gtk_widget_hide (GTK_WIDGET (gtk_builder_get_object (builder, "user_image_border")));
+        //gtk_widget_hide (GTK_WIDGET (user_image));  /* Hide to mark image is disabled */
+        //gtk_widget_set_size_request (GTK_WIDGET (user_combo), 250, -1);
     }
     else
     {
@@ -3065,7 +3027,7 @@ main (int argc, char **argv)
     {
         load_user_list ();
         gtk_widget_hide (GTK_WIDGET (cancel_button));
-        gtk_widget_show (GTK_WIDGET (user_combo));
+        gtk_widget_show (GTK_WIDGET (user_view));
     }
 
     /* Windows positions */
